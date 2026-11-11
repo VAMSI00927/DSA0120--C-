@@ -1,0 +1,76 @@
+#include <iostream>
+using namespace std;
+
+int& highestMark(int marks[], int size)
+{
+    int highestIndex = 0;
+
+    for (int i = 1; i < size; ++i)
+    {
+        if (marks[i] > marks[highestIndex])
+            highestIndex = i;
+    }
+
+    return marks[highestIndex];
+}
+
+int& dangerousLocalReference()
+{
+    int local = 50;
+    return local;
+}
+
+int highestMarkCopy(const int marks[], int size)
+{
+    int highest = marks[0];
+
+    for (int i = 1; i < size; ++i)
+    {
+        if (marks[i] > highest)
+            highest = marks[i];
+    }
+
+    return highest;
+}
+
+const int& highestMarkReadOnly(const int marks[], int size)
+{
+    int highestIndex = 0;
+
+    for (int i = 1; i < size; ++i)
+    {
+        if (marks[i] > marks[highestIndex])
+            highestIndex = i;
+    }
+
+    return marks[highestIndex];
+}
+
+int main()
+{
+    int marks[] = {76, 91, 84, 88, 95, 79};
+    const int size = sizeof(marks) / sizeof(marks[0]);
+
+    cout << "Highest mark: "
+         << highestMark(marks, size) << '\n';
+
+    highestMark(marks, size) += 2;
+
+    cout << "After moderation: "
+         << highestMark(marks, size) << '\n';
+
+    cout << "Returned copy: "
+         << highestMarkCopy(marks, size) << '\n';
+
+    cout << "Read-only reference: "
+         << highestMarkReadOnly(marks, size) << '\n';
+
+    cout << "Updated marks: ";
+
+    for (int mark : marks)
+        cout << mark << ' ';
+
+    cout << '\n';
+
+    return 0;
+}
