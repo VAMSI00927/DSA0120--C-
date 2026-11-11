@@ -1,0 +1,50 @@
+#include <iostream>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+class Time {
+    int totalSeconds;
+public:
+    Time(int h = 0, int m = 0, int s = 0) : totalSeconds(h * 3600 + m * 60 + s) {
+        if (h < 0 || m < 0 || s < 0) throw std::invalid_argument("Time cannot be negative");
+    }
+    Time& operator++() { ++totalSeconds; return *this; }       // prefix
+    Time operator++(int) { Time old = *this; ++totalSeconds; return old; } // postfix
+    bool operator==(const Time& other) const { return totalSeconds == other.totalSeconds; }
+    bool operator<(const Time& other) const { return totalSeconds < other.totalSeconds; }
+    friend std::ostream& operator<<(std::ostream& out, const Time& t) {
+        int h = t.totalSeconds / 3600, m = (t.totalSeconds % 3600) / 60, s = t.totalSeconds % 60;
+        return out << h << ':' << (m < 10 ? "0" : "") << m << ':' << (s < 10 ? "0" : "") << s;
+    }
+};
+
+class Playlist {
+    std::vector<std::string> tracks;
+public:
+    Playlist(std::initializer_list<std::string> items) : tracks(items) {}
+    std::string& operator[](int index) {
+        if (index < 0 || index >= static_cast<int>(tracks.size())) throw std::out_of_range("Playlist index out of range");
+        return tracks[static_cast<std::size_t>(index)];
+    }
+    const std::string& operator[](int index) const {
+        if (index < 0 || index >= static_cast<int>(tracks.size())) throw std::out_of_range("Playlist index out of range");
+        return tracks[static_cast<std::size_t>(index)];
+    }
+    int size() const { return static_cast<int>(tracks.size()); }
+};
+
+int main() {
+    Time t(0, 59, 59);
+    Time a = t++;
+    Time b = ++t;
+    std::cout << "Postfix result a: " << a << '\n';
+    std::cout << "Prefix result b: " << b << '\n';
+    std::cout << "Current time: " << t << '\n';
+    Playlist playlist{"Track One", "Track Two", "Track Three"};
+    std::cout << "Now playing: " << playlist[0] << '\n';
+    playlist[1] = "Updated Track";
+    std::cout << "Next track: " << playlist[1] << '\n';
+    try { std::cout << playlist[playlist.size()] << '\n'; }
+    catch (const std::out_of_range& e) { std::cout << "Range check: " << e.what() << '\n'; }
+}
