@@ -1,0 +1,285 @@
+
+#include <iostream>
+#include <iomanip>
+#include <limits>
+#include <array>
+#include <string>
+using namespace std;
+
+constexpr long long MIN_BALANCE_PAISE = 5000;
+constexpr int PEAK_SURCHARGE_PERCENT = 20;
+constexpr int WEEKEND_DISCOUNT_PERCENT = 10;
+
+enum class Zone {
+    Inner,
+    Middle,
+    Outer,
+    Airport,
+    Invalid
+};
+
+constexpr array<long long, 4> BASE_FARE = {
+    1000, 2000, 3000, 6000
+};
+
+string zoneName(Zone z) {
+    switch (z) {
+        case Zone::Inner: return "Inner";
+        case Zone::Middle: return "Middle";
+        case Zone::Outer: return "Outer";
+        case Zone::Airport: return "Airport";
+        default: return "Invalid";
+    }
+}
+
+Zone getZone(int choice) {
+    switch (choice) {
+        case 1: return Zone::Inner;
+        case 2: return Zone::Middle;
+        case 3: return Zone::Outer;
+        case 4: return Zone::Airport;
+        default: return Zone::Invalid;
+    }
+}
+
+bool isPeak(int hour) {
+    return (hour >= 8 && hour < 10) ||
+           (hour >= 17 && hour < 20);
+}
+
+long long calculateFare(
+    Zone zone,
+    int hour,
+    bool weekend
+) {
+    int index = static_cast<int>(zone);
+
+    if (index < 0 || index >= 4 || hour < 0 || hour > 23) {
+        return -1;
+    }
+
+    long long fare = BASE_FARE[index];
+
+    if (weekend) {
+        fare = fare * (100 - WEEKEND_DISCOUNT_PERCENT) / 100;
+    }
+    else if (isPeak(hour)) {
+        fare = fare * (100 + PEAK_SURCHARGE_PERCENT) / 100;
+    }
+
+    return fare;
+}
+
+class MonthlyPass {
+private:
+    bool active;
+    Zone zone1;
+    Zone zone2;
+
+public:
+    MonthlyPass() {
+        active = false;
+        zone1 = Zone::Invalid;
+        zone2 = Zone::Invalid;
+    }
+
+    void activate(Zone a, Zone b) {
+        if (a != Zone::Invalid && b != Zone::Invalid && a != b) {
+            zone1 = a;
+            zone2 = b;
+            active = true;
+        }
+    }
+
+    bool covers(Zone z) const {
+        return active && (z == zone1 || z == zone2);
+    }
+
+    bool isActive() const {
+        return active;
+    }
+};
+
+class SmartCard {
+private:
+    long long balancePaise;
+
+public:
+    explicit SmartCard(long long openingBalance) {
+        balancePaise = openingBalance >= 0 ? openingBalance : 0;
+    }
+
+    long long getBalance() const {
+        return balancePaise;
+    }
+
+    bool canTravel(long long fare) const {
+        return fare >= 0 &&
+               balancePaise >= fare &&
+               balancePaise - fare >= MIN_BALANCE_PAISE;
+    }
+
+    bool deduct(long long fare) {
+        if (!canTravel(fare)) {
+            return false;
+        }
+
+        balancePaise -= fare;
+        return true;
+    }
+
+    bool recharge(long long amount) {
+        if (amount <= 0) {
+            return false;
+        }
+
+        balancePaise += amount;
+        return true;
+    }
+};
+
+void printMoney(long long paise) {
+    cout << "Rs " << paise / 100 << "."
+         << setw(2) << setfill('0') << paise % 100
+         << setfill(' ');
+}
+
+bool readInteger(const string& message, int& value) {
+    cout << message;
+
+    if (cin >> value) {
+        return true;
+    }
+
+    cin.clear();
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+    cout << "Invalid input. Please enter a number.\n";
+    return false;
+}
+
+void runJourney(
+    SmartCard& card,
+    const MonthlyPass& pass,
+    Zone zone,
+    int hour,
+    bool weekend
+) {
+    cout << "\nZone: " << zoneName(zone) << '\n';
+
+    if (zone == Zone::Invalid || hour < 0 || hour > 23) {
+        cout << "Invalid journey details.\n";
+        return;
+    }
+
+    if (pass.covers(zone)) {
+        cout << "Monthly pass accepted. No fare deducted.\n";
+        printMoney(card.getBalance());
+        cout << " balance remaining\n";
+        return;
+    }
+
+    long long fare = calculateFare(zone, hour, weekend);
+
+    cout << "Fare: ";
+    printMoney(fare);
+    cout << '\n';
+
+    if (card.deduct(fare)) {
+        cout << "Journey approved.\n";
+    }
+    else {
+        cout << "Journey denied. Minimum balance rule not satisfied.\n";
+    }
+
+    cout << "Remaining balance: ";
+    printMoney(card.getBalance());
+    cout << '\n';
+}
+
+void runTestCases() {
+    struct Test {
+        Zone zone;
+        int hour;
+        bool weekend;
+        long long expected;
+    };
+
+    const Test tests[] = {
+        {Zone::Inner, 7, false, 1000},
+        {Zone::Middle, 9, false, 2400},
+        {Zone::Outer, 12, false, 3000},
+        {Zone::Outer, 18, false, 3600},
+        {Zone::Inner, 10, false, 1000},
+        {Zone::Middle, 20, false, 2000},
+        {Zone::Airport, 12, true, 5400}
+    };
+
+    cout << "\n----- FARE TEST RESULTS -----\n";
+
+    for (const Test& t : tests) {
+        long long actual = calculateFare(
+            t.zone, t.hour, t.weekend
+        );
+
+        cout << zoneName(t.zone)
+             << " | Hour: " << t.hour
+             << " | Weekend: " << (t.weekend ? "Yes" : "No")
+             << " | Expected: " << t.expected
+             << " | Actual: " << actual
+             << " | " << (actual == t.expected ? "PASS" : "FAIL")
+             << '\n';
+    }
+}
+
+int main() {
+    SmartCard card(10000);
+    MonthlyPass pass;
+
+    int choice, hour, weekendChoice;
+
+    cout << "====================================\n";
+    cout << " NAMMA METRO SMART-CARD SYSTEM\n";
+    cout << "====================================\n";
+
+    cout << "\nZones:\n";
+    cout << "1. Inner Zone\n";
+    cout << "2. Middle Zone\n";
+    cout << "3. Outer Zone\n";
+    cout << "4. Airport Zone\n";
+
+    if (!readInteger("\nEnter zone: ", choice)) {
+        return 1;
+    }
+
+    if (!readInteger("Enter journey hour (0-23): ", hour)) {
+        return 1;
+    }
+
+    if (!readInteger("Is it weekend? (1-Yes, 0-No): ", weekendChoice)) {
+        return 1;
+    }
+
+    if (weekendChoice != 0 && weekendChoice != 1) {
+        cout << "Invalid weekend choice.\n";
+        return 1;
+    }
+
+    Zone selectedZone = getZone(choice);
+
+    runJourney(
+        card,
+        pass,
+        selectedZone,
+        hour,
+        weekendChoice == 1
+    );
+
+    runTestCases();
+
+    cout << "\n----- FINAL CARD BALANCE -----\n";
+    printMoney(card.getBalance());
+    cout << '\n';
+
+    return 0;
+}
