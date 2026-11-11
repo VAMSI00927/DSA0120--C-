@@ -1,0 +1,60 @@
+#include <iostream>
+#include <array>
+using namespace std;
+
+class TransactionHistory
+{
+private:
+    static constexpr int CAPACITY = 50;
+
+    array<double, CAPACITY> data{};
+
+    int count = 0;
+    int next = 0;
+
+public:
+    void add(double amount)
+    {
+        data[next] = amount;
+
+        next = (next + 1) % CAPACITY;
+
+        if (count < CAPACITY)
+            ++count;
+    }
+
+    void display() const
+    {
+        int start = (count == CAPACITY) ? next : 0;
+
+        for (int i = 0; i < count; ++i)
+        {
+            cout << data[(start + i) % CAPACITY]
+                 << '\n';
+        }
+    }
+
+    int size() const
+    {
+        return count;
+    }
+};
+
+int main()
+{
+    TransactionHistory history;
+
+    for (int i = 1; i <= 55; ++i)
+    {
+        history.add(i * 100.0);
+    }
+
+    cout << "Stored transactions: "
+         << history.size() << '\n';
+
+    cout << "Oldest retained transaction to newest:\n";
+
+    history.display();
+
+    return 0;
+}
