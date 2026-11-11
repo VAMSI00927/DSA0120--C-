@@ -1,0 +1,38 @@
+#include <iomanip>
+#include <iostream>
+#include <stdexcept>
+
+class Money {
+    long long paise;
+public:
+    Money(long long rupees = 0, int p = 0) : paise(rupees * 100 + p) {}
+    static Money fromPaise(long long value) { Money m; m.paise = value; return m; }
+    Money operator+(const Money& other) const { return fromPaise(paise + other.paise); }
+    Money operator-(const Money& other) const { return fromPaise(paise - other.paise); }
+    Money& operator+=(const Money& other) { paise += other.paise; return *this; }
+    bool operator==(const Money& other) const { return paise == other.paise; }
+    bool operator<(const Money& other) const { return paise < other.paise; }
+    friend std::ostream& operator<<(std::ostream& out, const Money& value) {
+        long long magnitude = value.paise < 0 ? -value.paise : value.paise;
+        if (value.paise < 0) out << "-";
+        return out << "Rs " << magnitude / 100 << '.' << std::setw(2) << std::setfill('0') << magnitude % 100 << std::setfill(' ');
+    }
+    friend std::istream& operator>>(std::istream& in, Money& value) {
+        long long rupees; int p;
+        if (in >> rupees >> p) value = Money(rupees, p);
+        return in;
+    }
+};
+
+int main() {
+    Money a(120, 75), b(79, 25);
+    Money c = a + b;
+    std::cout << "Bill total: " << c << '\n';
+    std::cout << std::boolalpha << "Equals Rs 200: " << (c == Money(200)) << '\n';
+    Money carry = Money(0, 75) + Money(0, 50);
+    std::cout << "Paise carry: " << carry << '\n';
+    Money balance = Money(10) - Money(12, 50);
+    std::cout << "Negative balance: " << balance << '\n';
+    a += Money(1, 25);
+    std::cout << "Updated amount: " << a << '\n';
+}
