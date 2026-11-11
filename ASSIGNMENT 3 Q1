@@ -1,0 +1,38 @@
+#include <iostream>
+#include <stdexcept>
+#include <string>
+
+class Book {
+    std::string title;
+    std::string author;
+    int copies;
+    static int checkedCopies(int value) {
+        if (value < 0) throw std::invalid_argument("Number of copies cannot be negative");
+        return value;
+    }
+public:
+    Book() : Book("Untitled", "Unknown", 0) {}                 // default constructor
+    explicit Book(const std::string& bookTitle)               // title-only constructor
+        : Book(bookTitle, "Unknown", 0) {}
+    Book(const std::string& bookTitle, const std::string& bookAuthor, int count)
+        : title(bookTitle), author(bookAuthor), copies(checkedCopies(count)) {}
+    void display() const {
+        std::cout << "Title: " << title << " | Author: " << author
+                  << " | Copies: " << copies << '\n';
+    }
+};
+
+int main() {
+    try {
+        Book empty;
+        Book donated("Wings of Fire");
+        Book complete("The C++ Programming Language", "Bjarne Stroustrup", 5);
+        std::cout << "Default record\n"; empty.display();
+        std::cout << "Donated book\n"; donated.display();
+        std::cout << "Complete record\n"; complete.display();
+        Book invalid("Invalid Book", "Unknown", -2);
+        invalid.display();
+    } catch (const std::invalid_argument& e) {
+        std::cout << "Validation: " << e.what() << '\n';
+    }
+}
