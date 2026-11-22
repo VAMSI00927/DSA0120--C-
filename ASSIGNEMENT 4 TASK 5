@@ -1,0 +1,103 @@
+#include <iostream>
+#include <iomanip>
+#include <string>
+using namespace std;
+
+class Cart {
+    string items[10];
+    double prices[10];
+    int n = 0;
+    double discount = 0;
+
+public:
+    Cart& add(string item, double price) {
+        if (n < 10) {
+            items[n] = item;
+            prices[n] = price;
+            n++;
+        }
+        return *this;
+    }
+
+    Cart& setDiscount(double discount) {
+        this->discount = discount;
+        return *this;
+    }
+
+    double total() const {
+        double sum = 0;
+
+        for (int i = 0; i < n; i++)
+            sum += prices[i];
+
+        return sum * (100 - discount) / 100;
+    }
+
+    void display() const {
+        for (int i = 0; i < n; i++)
+            cout << items[i] << " : "
+                 << prices[i] << '\n';
+
+        cout << "Total: " << fixed
+             << setprecision(2) << total() << '\n';
+    }
+};
+
+int main() {
+    // Direct object
+    Cart c;
+    c.add("Rice", 60)
+     .add("Dal", 120)
+     .setDiscount(10);
+
+    cout << "Direct object:\n";
+    c.display();
+
+    // Pointer to object
+    Cart* p = &c;
+    p->add("Oil", 180);
+
+    cout << "\nPointer object:\n";
+    cout << fixed << setprecision(2)
+         << p->total() << '\n';
+
+    // Reference to object
+    Cart& ref = c;
+    ref.add("Sugar", 50);
+
+    cout << "\nReference object:\n";
+    ref.display();
+
+    // Dynamic object
+    Cart* dynamicCart = new Cart;
+
+    dynamicCart->add("Milk", 40)
+               .add("Bread", 35)
+               .setDiscount(5);
+
+    cout << "\nDynamic object:\n";
+    dynamicCart->display();
+
+    delete dynamicCart;
+
+    // Array of pointers
+    Cart cart1, cart2, cart3;
+
+    cart1.add("Book", 100);
+    cart2.add("Bag", 500);
+    cart3.add("Pen", 20);
+
+    Cart* carts[] = {&cart1, &cart2, &cart3};
+
+    Cart* highest = carts[0];
+
+    for (int i = 1; i < 3; i++) {
+        if (carts[i]->total() > highest->total())
+            highest = carts[i];
+    }
+
+    cout << "\nHighest cart total: "
+         << highest->total() << '\n';
+
+    return 0;
+}
