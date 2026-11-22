@@ -1,0 +1,161 @@
+#include <iostream>
+#include <memory>
+#include <vector>
+#include <stdexcept>
+#include <string>
+using namespace std;
+
+class BillingError : public runtime_error {
+public:
+    using runtime_error::runtime_error;
+};
+
+class ClaimError : public BillingError {
+public:
+    using BillingError::BillingError;
+};
+
+class Bill {
+protected:
+    string patient;
+
+public:
+    Bill(string p) : patient(p) {}
+
+    virtual double total() const = 0;
+
+    virtual ~Bill() = default;
+};
+
+class OutPatient : public Bill {
+    double consultation, tests;
+
+public:
+    OutPatient(string p, double c, double t)
+        : Bill(p), consultation(c), tests(t) {}
+
+    double total() const override {
+        return consultation + tests;
+    }
+};
+
+class InPatient : public Bill {
+    int days;
+    double rate, surgery;
+
+public:
+    InPatient(string p, int d, double r, double s)
+        : Bill(p), days(d), rate(r), surgery(s) {}
+
+    double total() const override {
+        return days * rate + surgery;
+    }
+};
+
+// New bill type
+class RehabilitationBill : public Bill {
+    int sessions;
+    double rate;
+
+public:
+    RehabilitationBill(string p, int s, double r)
+        : Bill(p), sessions(s), rate(r) {}
+
+    double total() const override {
+        return sessions * rate;
+    }
+};
+
+class Payer {
+public:
+    virtual double amountCovered(const Bill& bill) const = 0;
+    virtual ~Payer() = default;
+};
+
+class SelfPay : public Payer {
+public:
+    double amountCovered(const Bill& bill) const override {
+        return bill.total();
+    }
+};
+
+class Insurance : public Payer {
+    double coverLimit;
+    double coPayPercent;
+
+public:
+    Insurance(double limit, double percent)
+        : coverLimit(limit), coPayPercent(percent) {}
+
+    double amountCovered(const Bill& bill) const override {
+        double eligible = bill.total();
+
+        if (eligible > coverLimit)
+            eligible = coverLimit;
+
+        return eligible * (1 - coPayPercent / 100);
+    }
+};
+
+// New payer type
+class CorporatePayer : public Payer {
+    double percentage;
+
+public:
+    CorporatePayer(double p) : percentage(p) {
+        if (p < 0 || p > 100)
+            throw invalid_argument("Invalid percentage");
+    }
+
+    double amountCovered(const Bill& bill) const override {
+        return bill.total() * percentage / 100;
+    }
+};
+
+int main() {
+    try {
+        vector<unique_ptr<Bill>> bills;
+
+        bills.push_back(
+            make_unique<OutPatient>("Ravi", 500, 1200));
+
+        bills.push_back(
+            make_unique<InPatient>("Meena", 3, 2500, 40000));
+
+        bills.push_back(
+            make_unique<RehabilitationBill>("Arun", 8, 1500));
+
+        SelfPay self;
+        Insurance insurance(50000, 20);
+        CorporatePayer corporate(80);
+
+        cout << "Hospital Billing Details\n";
+
+        for (const auto& bill : bills) {
+            cout << "\nBill Amount: "
+                 << bill->total() << '\n';
+
+            cout << "Self Pay: "
+                 << self.amountCovered(*bill) << '\n';
+
+            cout << "Insurance: "
+                 << insurance.amountCovered(*bill) << '\n';
+
+            cout << "Corporate: "
+                 << corporate.amountCovered(*bill) << '\n';
+        }
+    }
+    catch (const bad_alloc&) {
+        cout << "Memory allocation failed\n";
+    }
+    catch (const exception& e) {
+        cout << "Error: " << e.what() << '\n';
+    }
+    catch (...) {
+        cout << "Unknown error occurred\n";
+    }
+
+    cout << "\nProgram completed safely\n";
+
+    return 0;
+}
