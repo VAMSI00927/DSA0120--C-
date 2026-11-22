@@ -1,0 +1,114 @@
+#include <iostream>
+#include <vector>
+#include <chrono>
+using namespace std;
+using namespace chrono;
+
+class Bill {
+public:
+    virtual double total() const = 0;
+    virtual ~Bill() = default;
+};
+
+class OutPatient : public Bill {
+    double consultation, tests;
+
+public:
+    OutPatient(double c, double t)
+        : consultation(c), tests(t) {}
+
+    double total() const override {
+        return consultation + tests;
+    }
+};
+
+class InPatient : public Bill {
+    int days;
+    double rate, surgery;
+
+public:
+    InPatient(int d, double r, double s)
+        : days(d), rate(r), surgery(s) {}
+
+    double total() const override {
+        return days * rate + surgery;
+    }
+};
+
+struct BillRecord {
+    int type;
+    double a, b, c;
+};
+
+double switchTotal(const BillRecord& bill) {
+    switch (bill.type) {
+        case 1:
+            return bill.a + bill.b;
+
+        case 2:
+            return bill.a * bill.b + bill.c;
+
+        default:
+            return 0;
+    }
+}
+
+int main() {
+    const int n = 1000000;
+
+    vector<BillRecord> records;
+    records.reserve(n);
+
+    for (int i = 0; i < n; i++) {
+        if (i % 2 == 0)
+            records.push_back({1, 500, 1200, 0});
+        else
+            records.push_back({2, 3, 2500, 40000});
+    }
+
+    auto start1 = high_resolution_clock::now();
+
+    double virtualSum = 0;
+
+    vector<Bill*> bills;
+    bills.reserve(n);
+
+    for (int i = 0; i < n; i++) {
+        if (i % 2 == 0)
+            bills.push_back(new OutPatient(500, 1200));
+        else
+            bills.push_back(new InPatient(3, 2500, 40000));
+    }
+
+    for (Bill* b : bills)
+        virtualSum += b->total();
+
+    auto end1 = high_resolution_clock::now();
+
+    auto start2 = high_resolution_clock::now();
+
+    double switchSum = 0;
+
+    for (const auto& b : records)
+        switchSum += switchTotal(b);
+
+    auto end2 = high_resolution_clock::now();
+
+    cout << "Virtual total: " << virtualSum << '\n';
+    cout << "Switch total: " << switchSum << '\n';
+
+    cout << "Virtual time: "
+         << duration_cast<milliseconds>(
+                end1 - start1).count()
+         << " ms\n";
+
+    cout << "Switch time: "
+         << duration_cast<milliseconds>(
+                end2 - start2).count()
+         << " ms\n";
+
+    for (Bill* b : bills)
+        delete b;
+
+    return 0;
+}
